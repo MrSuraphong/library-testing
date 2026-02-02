@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, ScrollView, KeyboardAvoidingView, Platform, Image } from 'react-native';
+import React, { useState, useRef, useEffect } from 'react';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, ScrollView, KeyboardAvoidingView, Platform, Image, Modal, Animated, Easing } from 'react-native';
 import axiosClient from '../api/axiosCliend';
 import { LinearGradient } from 'expo-linear-gradient';
 import * as ImagePicker from 'expo-image-picker';
@@ -14,6 +14,36 @@ export default function AddBookScreen({ navigation }) {
     const [quantity, setQuantity] = useState('');
     const [coverImage, setCoverImage] = useState(null);
     const [loading, setLoading] = useState(false);
+
+    // Custom Modal States
+    const [modalVisible, setModalVisible] = useState(false);
+    const [modalStatus, setModalStatus] = useState('loading'); // 'loading' | 'success' | 'error'
+    const spinValue = useRef(new Animated.Value(0)).current;
+
+    useEffect(() => {
+        if (modalVisible && modalStatus === 'loading') {
+            startSpin();
+        } else {
+            spinValue.setValue(0);
+        }
+    }, [modalVisible, modalStatus]);
+
+    const startSpin = () => {
+        spinValue.setValue(0);
+        Animated.loop(
+            Animated.timing(spinValue, {
+                toValue: 1,
+                duration: 1500,
+                easing: Easing.linear,
+                useNativeDriver: true,
+            })
+        ).start();
+    };
+
+    const spin = spinValue.interpolate({
+        inputRange: [0, 1],
+        outputRange: ['0deg', '360deg'],
+    });
 
     const pickImage = async () => {
         const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
@@ -42,7 +72,11 @@ export default function AddBookScreen({ navigation }) {
             return;
         }
 
+        // 1. Show Loading Modal
+        setModalStatus('loading');
+        setModalVisible(true);
         setLoading(true);
+
         try {
             await axiosClient.post('/books', {
                 title,
@@ -51,11 +85,18 @@ export default function AddBookScreen({ navigation }) {
                 coverImage
             });
 
-            Alert.alert('Success', 'Book added successfully', [
-                { text: 'OK', onPress: () => navigation.goBack() }
-            ]);
+            // 2. Show Success State
+            setModalStatus('success');
+
+            // 3. Navigate after delay
+            setTimeout(() => {
+                setModalVisible(false);
+                navigation.navigate('Home');
+            }, 2000);
+
         } catch (error) {
             console.error(error);
+            setModalVisible(false); // Close generic modal
             const errorMessage = error.response?.data?.error || 'Failed to add book';
             Alert.alert('Error', errorMessage);
         } finally {
@@ -142,13 +183,38 @@ export default function AddBookScreen({ navigation }) {
                                 disabled={loading}
                             >
                                 <Text style={styles.buttonText}>
-                                    {loading ? 'Adding...' : 'Add Book'}
+                                    {loading ? 'Processing...' : 'Add Book'}
                                 </Text>
                             </TouchableOpacity>
                         </View>
                     </View>
                 </ScrollView>
             </KeyboardAvoidingView>
+
+            {/* Custom Success/Loading Modal */}
+            <Modal
+                transparent={true}
+                visible={modalVisible}
+                animationType="fade"
+            >
+                <View style={styles.modalOverlay}>
+                    <View style={styles.modalContent}>
+                        {modalStatus === 'loading' ? (
+                            <>
+                                <Animated.View style={{ transform: [{ rotate: spin }] }}>
+                                    <Ionicons name="sync" size={60} color="#3b82f6" />
+                                </Animated.View>
+                                <Text style={styles.modalText}>Adding Book...</Text>
+                            </>
+                        ) : (
+                            <>
+                                <Ionicons name="checkmark-circle" size={80} color="#10b981" />
+                                <Text style={styles.modalText}>Success!</Text>
+                            </>
+                        )}
+                    </View>
+                </View>
+            </Modal>
         </View>
     );
 }
@@ -284,4 +350,33 @@ const styles = StyleSheet.create({
         fontSize: 16,
         fontWeight: 'bold',
     },
+    // Modal Styles
+    modalOverlay: {
+        flex: 1,
+        backgroundColor: 'rgba(0,0,0,0.7)',
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    modalContent: {
+        width: 200,
+        padding: 20,
+        backgroundColor: '#1e293b',
+        borderRadius: 20,
+        alignItems: 'center',
+        justifyContent: 'center',
+        borderWidth: 1,
+        borderColor: 'rgba(255,255,255,0.1)',
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 10 },
+        shadowOpacity: 0.5,
+        shadowRadius: 20,
+        elevation: 10,
+    },
+    modalText: {
+        marginTop: 15,
+        color: '#fff',
+        fontSize: 18,
+        fontWeight: 'bold',
+        textAlign: 'center'
+    }
 });

@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useContext } from 'react';
-import { View, Text, FlatList, StyleSheet, ActivityIndicator, Image, Platform } from 'react-native';
+import { View, Text, FlatList, StyleSheet, ActivityIndicator, Image, Platform, TouchableOpacity } from 'react-native';
 import axiosClient from '../api/axiosCliend';
 import { AuthContext } from '../context/AuthContext';
 import { Ionicons } from '@expo/vector-icons';
@@ -17,7 +17,7 @@ const HistoryScreen = ({ navigation }) => {
 
     const fetchHistory = async () => {
         try {
-            const response = await axiosClient.get(`/transactions/user/${user._id}`);
+            const response = await axiosClient.get(`/history/${user._id}`);
             setHistory(response.data);
         } catch (error) {
             console.error(error);
@@ -26,46 +26,52 @@ const HistoryScreen = ({ navigation }) => {
         }
     };
 
-    const renderItem = ({ item }) => (
-        <View style={styles.card}>
-            <View style={styles.cardHeader}>
-                <View style={[styles.statusIcon, item.status === 'returned' ? styles.iconReturned : styles.iconBorrowed]}>
-                    <Ionicons
-                        name={item.status === 'returned' ? "checkmark" : "time"}
-                        size={16}
-                        color={item.status === 'returned' ? "#10b981" : "#f59e0b"}
-                    />
-                </View>
-                <View style={styles.headerInfo}>
-                    <Text style={[styles.statusText, item.status === 'returned' ? { color: '#10b981' } : { color: '#f59e0b' }]}>
-                        {item.status.toUpperCase()}
-                    </Text>
-                    <Text style={styles.date}> Borrowed: {new Date(item.borrow_date).toLocaleDateString()}</Text>
-                </View>
-            </View>
+    const renderItem = ({ item }) => {
+        if (!item) return null;
+        const status = item.status || 'unknown';
+        const isReturned = status === 'returned';
 
-            <View style={styles.contentRow}>
-                {item.book_id?.coverImage ? (
-                    <Image source={{ uri: item.book_id.coverImage }} style={styles.bookCover} resizeMode="cover" />
-                ) : (
-                    <View style={styles.bookIconPlaceholder}>
-                        <Ionicons name="book" size={24} color="#3b82f6" />
+        return (
+            <View style={styles.card}>
+                <View style={styles.cardHeader}>
+                    <View style={[styles.statusIcon, isReturned ? styles.iconReturned : styles.iconBorrowed]}>
+                        <Ionicons
+                            name={isReturned ? "checkmark" : "time"}
+                            size={16}
+                            color={isReturned ? "#10b981" : "#f59e0b"}
+                        />
                     </View>
-                )}
+                    <View style={styles.headerInfo}>
+                        <Text style={[styles.statusText, isReturned ? { color: '#10b981' } : { color: '#f59e0b' }]}>
+                            {status.toUpperCase()}
+                        </Text>
+                        <Text style={styles.date}> Borrowed: {item.borrow_date ? new Date(item.borrow_date).toLocaleDateString() : 'N/A'}</Text>
+                    </View>
+                </View>
 
-                <View style={styles.details}>
-                    <Text style={styles.bookTitle}>{item.book_id?.title || "Unknown Book"}</Text>
-
-                    {item.return_date && (
-                        <View style={styles.returnBadge}>
-                            <Ionicons name="return-down-back" size={12} color="#94a3b8" style={{ marginRight: 4 }} />
-                            <Text style={styles.returnDateText}>Returned: {new Date(item.return_date).toLocaleDateString()}</Text>
+                <View style={styles.contentRow}>
+                    {item.book_id?.coverImage ? (
+                        <Image source={{ uri: item.book_id.coverImage }} style={styles.bookCover} resizeMode="cover" />
+                    ) : (
+                        <View style={styles.bookIconPlaceholder}>
+                            <Ionicons name="book" size={24} color="#3b82f6" />
                         </View>
                     )}
+
+                    <View style={styles.details}>
+                        <Text style={styles.bookTitle}>{item.book_id?.title || "Unknown Book"}</Text>
+
+                        {item.return_date && (
+                            <View style={styles.returnBadge}>
+                                <Ionicons name="return-down-back" size={12} color="#94a3b8" style={{ marginRight: 4 }} />
+                                <Text style={styles.returnDateText}>Returned: {new Date(item.return_date).toLocaleDateString()}</Text>
+                            </View>
+                        )}
+                    </View>
                 </View>
             </View>
-        </View>
-    );
+        );
+    };
 
     return (
         <View style={styles.container}>

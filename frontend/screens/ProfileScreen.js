@@ -11,7 +11,8 @@ export default function ProfileScreen({ navigation }) {
     const { user, logout, updateUser } = useContext(AuthContext);
     const [editing, setEditing] = useState(false);
     const [username, setUsername] = useState(user?.username || '');
-    const [email, setEmail] = useState(user?.email || ''); // Assuming user object has email
+    const [email, setEmail] = useState(user?.email || '');
+    const [bio, setBio] = useState(user?.bio || '');
     const [profileImage, setProfileImage] = useState(user?.profilePicture || null);
     const [loading, setLoading] = useState(false);
 
@@ -19,16 +20,24 @@ export default function ProfileScreen({ navigation }) {
         if (user) {
             setUsername(user.username || '');
             setEmail(user.email || '');
+            setBio(user.bio || '');
             setProfileImage(user.profilePicture || null);
         }
     }, [user]);
 
     const pickImage = async () => {
+        // Request permissions
+        const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+        if (status !== 'granted') {
+            Alert.alert('Permission needed', 'Sorry, we need camera roll permissions to make this work!');
+            return;
+        }
+
         let result = await ImagePicker.launchImageLibraryAsync({
             mediaTypes: ImagePicker.MediaTypeOptions.Images,
-            allowsEditing: true,
-            aspect: [1, 1],
-            quality: 0.5,
+            allowsEditing: true, // This enables cropping
+            aspect: [1, 1], // Square crop
+            quality: 0.8,
             base64: true,
         });
 
@@ -43,12 +52,20 @@ export default function ProfileScreen({ navigation }) {
             const response = await axiosClient.put(`/users/${user._id}`, {
                 username,
                 email,
+                bio,
                 profilePicture: profileImage
             });
 
-            updateUser(response.data); // specific to your AuthContext implementation
+            // Backend returns { message, user: { ... } }
+            // We need to pass the user object to updateUser
+            if (response.data.user) {
+                updateUser(response.data.user);
+            }
+
             setEditing(false);
-            Alert.alert('Success', 'Profile updated successfully');
+            Alert.alert('Success', 'Profile updated successfully', [
+                { text: 'OK', onPress: () => navigation.goBack() }
+            ]);
         } catch (error) {
             console.error(error);
             Alert.alert('Error', 'Failed to update profile');
@@ -101,15 +118,7 @@ export default function ProfileScreen({ navigation }) {
                     </View>
 
                     <View style={styles.formSection}>
-                        <View style={styles.inputGroup}>
-                            <Text style={styles.label}>Username</Text>
-                            <TextInput
-                                style={[styles.input, !editing && styles.inputDisabled]}
-                                value={username}
-                                onChangeText={setUsername}
-                                editable={editing}
-                            />
-                        </View>
+                        {/* Username Input Removed as requested */}
 
                         <View style={styles.inputGroup}>
                             <Text style={styles.label}>Email Address</Text>
@@ -121,6 +130,18 @@ export default function ProfileScreen({ navigation }) {
                                 keyboardType="email-address"
                             />
                         </View>
+
+                        <View style={styles.inputGroup}>
+                            <Text style={styles.label}>Bio</Text>
+                            <TextInput
+                                style={[styles.input, !editing && styles.inputDisabled, { height: 80, textAlignVertical: 'top' }]}
+                                value={bio}
+                                onChangeText={setBio}
+                                editable={editing}
+                                multiline
+                            />
+                        </View>
+
                     </View>
 
                     <View style={styles.actionButtons}>

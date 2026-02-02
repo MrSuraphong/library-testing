@@ -4,7 +4,7 @@ services:
   # 1. ส่วนของ Database (MongoDB)
   mongo_db:
     image: mongo:latest
-    container_name: exam_mongo
+    container_name: Library-mongo
     ports:
       - "27017:27017"
     volumes:
@@ -13,13 +13,13 @@ services:
   # 2. ส่วนของ Backend API
   backend_api:
     build: ./backend
-    container_name: exam_backend
+    container_name: Library-backend
     ports:
       - "3000:3000"
     depends_on:
       - mongo_db
     environment:
-      - MONGO_URI=mongodb://mongo_db:27017/mr-zeren-library
+      - MONGO_URI=mongodb://mongo_db:27017/Library-zeren
 
 volumes:
   mongo_data:

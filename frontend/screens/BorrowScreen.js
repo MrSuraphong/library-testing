@@ -85,7 +85,7 @@ export default function BorrowScreen({ route, navigation }) {
                     animationType="fade"
                     transparent={true}
                     visible={successModalVisible}
-                    onRequestClose={() => navigation.navigate('Main')}
+                    onRequestClose={() => navigation.navigate('Home')}
                 >
                     <View style={styles.modalOverlay}>
                         <View style={styles.modalContent}>
@@ -104,7 +104,7 @@ export default function BorrowScreen({ route, navigation }) {
                                 style={[styles.button, styles.successButton]}
                                 onPress={() => {
                                     setSuccessModalVisible(false);
-                                    navigation.navigate('Main');
+                                    navigation.navigate('Home');
                                 }}
                             >
                                 <Text style={styles.buttonText}>Back to Home</Text>

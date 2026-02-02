@@ -87,11 +87,11 @@ app.get('/users', async (req, res) => {
 app.put('/users/:id', async (req, res) => {
     try {
         const { id } = req.params;
-        const { profilePicture, bio } = req.body;
+        const { profilePicture, bio, username, email } = req.body;
 
         const user = await User.findByIdAndUpdate(
             id,
-            { profilePicture, bio },
+            { profilePicture, bio, username, email },
             { new: true } // Return updated document
         );
 

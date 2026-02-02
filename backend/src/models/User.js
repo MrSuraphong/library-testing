@@ -10,6 +10,10 @@ const userSchema = new mongoose.Schema({
         type: String,
         required: true
     },
+    email: {
+        type: String,
+        default: ''
+    },
     role: {
         type: String,
         enum: ['member', 'admin'], // แยก Role ตามโจทย์ (Member=สมาชิก, Admin=ผู้ดูแล)
